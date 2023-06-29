@@ -33,18 +33,21 @@ export default class Search{
         return `https://pvp.giustizia.it/pvp/it/risultati_ricerca.page?tipo_bene=immobili&categoria=&geo=geografica&nazione=ITA&regione=${region_index[this.config.location]}&localita=&indirizzo=&prezzo_da=&prezzo_a=&tribunale=&procedura=&anno=&idInserzione=&ricerca_libera=&disponibilita=&ordinamento=data_pub_decre&ordine_localita=a_z&view=tab&elementiPerPagina=${this.config.items_per_page}&frame4_item=1`
     }
 
-    async grabCurrentRunduplicates() {
-        const auctionCards = await this.mainPage.$$('div.row.tile-blocks > div')
-        const auctionCardData = []
-        for(const auctionCard of auctionCards){
-            const auctionCardLink = await auctionCard.$eval("div.col-xs-12.relative > a", el => el.href)
-            const auction_id = auctionCardLink.split('&').find(el => el.includes("contentId")).replace('contentId=', "")
-            const auctionCardLocation = await auctionCard.$eval("div.col-xs-12 > div > div > div.anagrafica-risultato", el => el.textContent.replaceAll("\t", '').replaceAll("\n", '').trim())
-            const auctionCardCategory = await auctionCard.$eval("div.col-xs-12.relative > span.categoria", el => el.textContent.replaceAll("\t", '').replaceAll("\n", '').trim())
-            auctionCardData.push({auction_id, auctionCardLink, auctionCardCategory, auctionCardLocation})
-        }
-        return auctionCardData
-    }
+    async grabCurrentRunDuplicates() {
+        const auctionCards = await this.mainPage.$$('div.row.tile-blocks > div');
+      
+        const auctionCardDataPromises = auctionCards.map(async (auctionCard) => {
+          const auctionCardLink = await auctionCard.$eval("div.col-xs-12.relative > a", (el) => el.href);
+          const auction_id = auctionCardLink.split('&').find((el) => el.includes("contentId")).replace('contentId=', "");
+          const auctionCardLocation = await auctionCard.$eval("div.col-xs-12 > div > div > div.anagrafica-risultato", (el) => el.textContent.trim());
+          const auctionCardCategory = await auctionCard.$eval("div.col-xs-12.relative > span.categoria", (el) => el.textContent.trim());
+      
+          return { auction_id, auctionCardLink, auctionCardCategory, auctionCardLocation };
+        });
+      
+        return Promise.all(auctionCardDataPromises);
+      }
+      
 
     async popupButtonHandler() {
         try{
@@ -155,9 +158,9 @@ export default class Search{
     
     async getDuplicates() {
         try {
-          const data = await fsPromises.readFile('Temp/temp.json', { encoding: "utf-8" });
-          const oldAuctionData = JSON.parse(data);
-          console.log('Current file length:', oldAuctionData.length);
+          const response = await fsPromises.readFile('Temp/temp.json', { encoding: "utf-8" });
+          const oldAuctionData = JSON.parse(response);
+          console.log('Current file length: ' + oldAuctionData.length);
           return oldAuctionData;
         } catch (error) {
           console.log(chalk.redBright('⚙️  Missing file! Creating a new temp.json...'));
@@ -167,6 +170,7 @@ export default class Search{
       
 
     async doClusterDataCollection(file_name){
+        console.log(chalk.yellowBright("🏁 Starting Cluster Data Collection..."));
         const cluster = await Cluster.launch({
             concurrency: Cluster.CONCURRENCY_PAGE,
             maxConcurrency: this.threads_num,
@@ -206,35 +210,42 @@ export default class Search{
         return 0
     }
 
-    async doSearch(){
-        console.log(chalk.yellow("🔍 Starting Search..."))
-        var oldAuctionData = await this.getDuplicates()
-        var url = this.fabricateQuery(this.config.location, this.config.items_per_page)
-        const browser = await puppeteer.launch({headless: !this.debugMode})
-        this.mainPage = await browser.newPage()
-        await this.mainPage.goto(url, {waitUntil: 'networkidle2'})
-        var currentPage = 1
-        var lastPage = 0
-        var currentRunduplicates = []
-        var oldduplicates = oldAuctionData.filter(data => data.auction_id)
-        console.log("Duplicates length: " + oldduplicates.length)
-        while(currentPage <= this.maxCycles){
-            console.log("Current cycle number: " + currentPage)
-            await this.popupButtonHandler()
-            currentRunduplicates = currentRunduplicates.concat((await this.grabCurrentRunduplicates()).filter((data) => !oldduplicates.includes(data.auction_id)))
-            lastPage = currentPage
-            currentPage++
-            console.log('current duplicates length: ' + currentRunduplicates.length)
-            url = url.replace(`frame4_item=${lastPage}`, `frame4_item=${currentPage}`)
-            await this.mainPage.goto(url,{waitUntil: 'networkidle2'})
+    async doSearch() {
+        console.log(chalk.yellow("🔍 Starting Search..."));
+        var oldAuctionData = await this.getDuplicates();
+        var url = this.fabricateQuery(this.config.location, this.config.items_per_page);
+        const browser = await puppeteer.launch({ headless: !this.debugMode });
+        this.mainPage = await browser.newPage();
+        await this.mainPage.goto(url, { waitUntil: 'networkidle2' });
+        let currentPage = 1;
+        let lastPage = 0;
+        let currentRunDuplicates = [];
+        const oldDuplicates = oldAuctionData.filter((data) => data.auction_id);
+        console.log("Result length: " + oldDuplicates.length);
+        while (currentPage <= this.maxCycles) {
+          console.log("Current page number: " + currentPage);
+          await this.popupButtonHandler();
+          const runDuplicates = await this.grabCurrentRunDuplicates();
+          currentRunDuplicates = currentRunDuplicates.concat(
+            runDuplicates.filter((data) => !oldDuplicates.includes(data.auction_id))
+          );
+          lastPage = currentPage;
+          currentPage++;
+          console.log('Current duplicates length: ' + currentRunDuplicates.length);
+          url = url.replace(`frame4_item=${lastPage}`, `frame4_item=${currentPage}`);
+          await this.mainPage.goto(url, { waitUntil: 'networkidle2' });
         }
-        browser.close()
-        const newduplicates = oldAuctionData.concat(currentRunduplicates.filter((data) => !oldAuctionData.includes(data)))
-        await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newduplicates)).then(console.log(chalk.green("✅ Correctly compiled temp.json")))
-        .catch((err) => {
-            console.log(err)
-            return 0
-        })
-    }
+        await browser.close();
+        const newDuplicates = oldAuctionData.concat(currentRunDuplicates.filter((data) => !oldAuctionData.includes(data)));
+        try {
+          await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newDuplicates));
+          console.log(chalk.green("✅ Correctly compiled temp.json"));
+        } catch (err) {
+          console.log(err);
+          return 0;
+        }
+      }
+      
+    
 
 }
