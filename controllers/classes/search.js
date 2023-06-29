@@ -3,6 +3,7 @@ import puppeteer from 'puppeteer'
 import { Cluster } from 'puppeteer-cluster'
 import JSON2CSVParser from 'json2csv/lib/JSON2CSVParser.js'
 import { region_index } from '../dataController.js'
+import chalk from 'chalk';
 export default class Search{
 
     constructor(config = {location: 1, items_per_page: 10}, debugMode=0, maxCycles=3, threads_num=10){
@@ -153,13 +154,17 @@ export default class Search{
     }
     
     async getDuplicates() {
-        var oldAuctionData = []
-        await fsPromises.readFile('Temp/temp.json', { encoding: "utf-8" })
-            .then(response => oldAuctionData = JSON.parse(response))
-            .catch(() => console.log('"Il file non esiste, verrà ne verrà creato uno nuovo'))
-        console.log('current file length: ' + oldAuctionData.length)
-        return oldAuctionData
-    }
+        try {
+          const data = await fsPromises.readFile('Temp/temp.json', { encoding: "utf-8" });
+          const oldAuctionData = JSON.parse(data);
+          console.log('Current file length:', oldAuctionData.length);
+          return oldAuctionData;
+        } catch (error) {
+          console.log(chalk.redBright('⚙️  Missing file! Creating a new temp.json...'));
+          return [];
+        }
+      }
+      
 
     async doClusterDataCollection(file_name){
         const cluster = await Cluster.launch({
@@ -202,7 +207,7 @@ export default class Search{
     }
 
     async doSearch(){
-        console.log("Starting Search...")
+        console.log(chalk.yellow("🔍 Starting Search..."))
         var oldAuctionData = await this.getDuplicates()
         var url = this.fabricateQuery(this.config.location, this.config.items_per_page)
         const browser = await puppeteer.launch({headless: !this.debugMode})
@@ -225,7 +230,7 @@ export default class Search{
         }
         browser.close()
         const newduplicates = oldAuctionData.concat(currentRunduplicates.filter((data) => !oldAuctionData.includes(data)))
-        await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newduplicates)).then(console.log("✅ Correctly compiled temp.json"))
+        await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newduplicates)).then(console.log(chalk.green("✅ Correctly compiled temp.json")))
         .catch((err) => {
             console.log(err)
             return 0
