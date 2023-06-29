@@ -170,10 +170,24 @@ export default class Search{
           return [];
         }
       }
+    
+      async getDatasFromNewResults() {
+        try {
+            console.log(chalk.yellow("Trying to read the new_results.json file"));
+            const response = await fsPromises.readFile('Temp/new_results.json', { encoding: "utf-8" });
+            const newAuctionData = JSON.parse(response);
+            console.log('Current file length: ' + newAuctionData.length);
+            return newAuctionData;
+          } catch (error) {
+            console.log(chalk.redBright('⚙️  Missing file! Creating a new_results.json...'));
+            return [];
+          }
+      }
       
 
     async doClusterDataCollection(file_name){
         console.log(chalk.yellowBright("🏁 Starting Cluster Data Collection..."));
+        const newFileName = `new_results.json`;
         const cluster = await Cluster.launch({
             concurrency: Cluster.CONCURRENCY_PAGE,
             maxConcurrency: this.threads_num,
@@ -186,7 +200,7 @@ export default class Search{
         await cluster.task(async ({page, data: data, worker}) =>{
             await this.grabDataFromdata(page, data, worker.id)
         })
-        const duplicates = await this.getDuplicates()
+        const duplicates = await this.getDatasFromNewResults()
         var checkedduplicates = 0
         var unCheckedduplicates = 0
         duplicates.every(async (data, i) =>{
@@ -209,7 +223,15 @@ export default class Search{
         await cluster.idle()
         await cluster.close()
         await this.convertToCSV(this.search_data, file_name)
-        console.log(chalk.greenBright(`✅ ${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv`))
+        console.log(chalk.greenBright(`✅ ${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv`));
+        try {
+            // We delete the previous newFileName to create a new empty one.
+              await fsPromises.writeFile(`Temp/${newFileName}`, '[]');
+              console.log(chalk.green("✅ Correctly reset of", newFileName));
+            } catch (err) {
+              console.log(err);
+              return 0;
+            }
         return 0
     }
 
