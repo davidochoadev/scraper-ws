@@ -3,6 +3,7 @@ import cors from 'cors';
 import corsOptions from "./config/corsOptions.js";
 import { performSearch } from "./controllers/searchController.js";
 import { performData } from "./controllers/dataController.js";
+import { removeData } from "./controllers/removeController.js";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -38,6 +39,7 @@ app.get("/export/export_lombardia.csv", (req, res) => {
 
 app.get("/search", performSearch);
 app.get("/data", performData);
+app.get("/remove", removeData);
 
 const port = process.env.PORT || 8000;
 app.listen(port, () => {

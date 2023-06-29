@@ -41,8 +41,10 @@ export default class Search{
           const auction_id = auctionCardLink.split('&').find((el) => el.includes("contentId")).replace('contentId=', "");
           const auctionCardLocation = await auctionCard.$eval("div.col-xs-12 > div > div > div.anagrafica-risultato", (el) => el.textContent.trim());
           const auctionCardCategory = await auctionCard.$eval("div.col-xs-12.relative > span.categoria", (el) => el.textContent.trim());
+          const expirationDate = new Date();
+          expirationDate.setDate(expirationDate.getDate() + 20);
       
-          return { auction_id, auctionCardLink, auctionCardCategory, auctionCardLocation };
+          return { auction_id, auctionCardLink, auctionCardCategory, auctionCardLocation, expirationDate };
         });
       
         return Promise.all(auctionCardDataPromises);
@@ -158,12 +160,13 @@ export default class Search{
     
     async getDuplicates() {
         try {
-          const response = await fsPromises.readFile('Temp/temp.json', { encoding: "utf-8" });
+          console.log(chalk("Trying to read the storage.json file"))
+          const response = await fsPromises.readFile('Temp/storage.json', { encoding: "utf-8" });
           const oldAuctionData = JSON.parse(response);
           console.log('Current file length: ' + oldAuctionData.length);
           return oldAuctionData;
         } catch (error) {
-          console.log(chalk.redBright('⚙️  Missing file! Creating a new temp.json...'));
+          console.log(chalk.redBright('⚙️  Missing file! Creating a new storage.json...'));
           return [];
         }
       }
@@ -211,6 +214,7 @@ export default class Search{
     }
 
     async doSearch() {
+        const newFileName = `new_results.json`;
         console.log(chalk.yellow("🔍 Starting Search..."));
         var oldAuctionData = await this.getDuplicates();
         var url = this.fabricateQuery(this.config.location, this.config.items_per_page);
@@ -227,8 +231,8 @@ export default class Search{
           await this.popupButtonHandler();
           const runDuplicates = await this.grabCurrentRunDuplicates();
           currentRunDuplicates = currentRunDuplicates.concat(
-            runDuplicates.filter((data) => !oldDuplicates.includes(data.auction_id))
-          );
+            runDuplicates.filter((data) => !oldDuplicates.some((oldData) => oldData.auction_id === data.auction_id))
+          );          
           lastPage = currentPage;
           currentPage++;
           console.log('Current duplicates length: ' + currentRunDuplicates.length);
@@ -237,15 +241,48 @@ export default class Search{
         }
         await browser.close();
         const newDuplicates = oldAuctionData.concat(currentRunDuplicates.filter((data) => !oldAuctionData.includes(data)));
+        if(currentRunDuplicates.length > 0) {
+            try {
+            await fsPromises.unlink(`Temp/${newFileName}`);
+            await fsPromises.writeFile('Temp/storage.json', JSON.stringify(newDuplicates));
+            await fsPromises.writeFile(`Temp/${newFileName}`, JSON.stringify(currentRunDuplicates));
+            console.log(chalk.green("✅ Correctly created ", newFileName));
+            console.log(chalk.green("✅ Correctly compiled storage.json"));
+            } catch (err) {
+            console.log(err);
+            return 0;
+            }
+        } else {
+            // If the lenght of the currentRunDuplicates is equal to 0 
+            try {
+            // We delete the previous newFileName to create a new empty one.
+              await fsPromises.writeFile(`Temp/${newFileName}`, '[]');
+              console.log(chalk.green("✅ Correctly created empty", newFileName));
+            } catch (err) {
+              console.log(err);
+              return 0;
+            }
+          }
+      }
+
+      async deleteExpiredElements() {
+        console.log(chalk.yellow("🗑️ Removing expired elements from storage.json..."));
+        const tempFilePath = 'Temp/storage.json';
+        const oldAuctionData = await this.getDuplicates();
+        const currentDate = new Date();
+        
+        // Filter out expired elements
+        const updatedData = oldAuctionData.filter((data) => {
+          const expirationDate = new Date(data.expirationDate);
+          return expirationDate >= currentDate;
+        });
+        
         try {
-          await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newDuplicates));
-          console.log(chalk.green("✅ Correctly compiled temp.json"));
+          // Write updated data back to storage.json
+          await fsPromises.writeFile(tempFilePath, JSON.stringify(updatedData, null, 2));
+          console.log(chalk.green("✅ Expired elements have been removed from storage.json."));
         } catch (err) {
-          console.log(err);
-          return 0;
+          console.error(`Error writing to ${tempFilePath}:`, err);
         }
       }
-      
-    
-
 }
