@@ -24,7 +24,7 @@ export default class Search{
                 console.log(err)
                 return 0
             }
-            console.log("File was created successfully")
+            console.log(("✅ CSV File was created successfully"))
             return 1
         })
     }
@@ -150,7 +150,7 @@ export default class Search{
         const auctionDate = new Date(date.split("-").reverse().join(","))
         const minDate = new Date(new Date().getDate() + 40 * 24 * 60 * 60 * 1000)
         if(auctionDate.getDate() > minDate.getDate()){
-            console.log("La data di terminazione è nel tempo limite")
+            console.log(chalk.green("✅ The termination date of the auction is within the time limit"))
             this.search_data.push(auctionData)
         }
         return 0
@@ -190,11 +190,11 @@ export default class Search{
             try{
                 await cluster.execute(data)
                 checkedduplicates++
-                console.log(`data number ${i} has been processed. Total progress: ${(checkedduplicates / (duplicates.length.toFixed(0) - unCheckedduplicates) * 100).toFixed(2)}%`)
+                console.log(chalk.blue(`⚙️  Data number ${i} has been processed. Total progress: ${(checkedduplicates / (duplicates.length.toFixed(0) - unCheckedduplicates) * 100).toFixed(2)}%`))
             }
             catch(err){
                 try{
-                    console.log(`data number ${i} encountered an error. The program will try one more time before stopping`)
+                    console.log(chalk.redBright(`⚠️  Data number ${i} encountered an error. The program will try one more time before stopping`))
                     await cluster.execute(data)
                 }
                 catch(err){
@@ -206,7 +206,7 @@ export default class Search{
         await cluster.idle()
         await cluster.close()
         await this.convertToCSV(this.search_data, file_name)
-        console.log(`${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv`)
+        console.log(chalk.greenBright(`✅ ${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv`))
         return 0
     }
 
