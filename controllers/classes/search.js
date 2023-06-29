@@ -202,6 +202,7 @@ export default class Search{
     }
 
     async doSearch(){
+        console.log("Starting Search...")
         var oldAuctionData = await this.getDuplicates()
         var url = this.fabricateQuery(this.config.location, this.config.items_per_page)
         const browser = await puppeteer.launch({headless: !this.debugMode})
@@ -224,7 +225,7 @@ export default class Search{
         }
         browser.close()
         const newduplicates = oldAuctionData.concat(currentRunduplicates.filter((data) => !oldAuctionData.includes(data)))
-        await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newduplicates))
+        await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newduplicates)).then(console.log("correctly compiled temp.json"))
         .catch((err) => {
             console.log(err)
             return 0
