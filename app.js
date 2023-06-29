@@ -17,14 +17,14 @@ app.get("/", (req, res) => {
     res.status(200).json({ welcome_message: "Server Express di Asta Click!" });
 });
 
-app.get("/data/export_lombardia.csv", (req, res) => {
-  const filePath = path.join(process.cwd(), "data", "export_lombardia.csv");
+app.get("/export/export_lombardia.csv", (req, res) => {
+  const filePath = path.join(process.cwd(), "Data", "export_lombardia.csv");
 
   // Read the file contents
   fs.readFile(filePath, (err, data) => {
     if (err) {
       console.error("Error reading file:", err);
-      return res.status(500).send("Internal Server Error");
+      return res.status(500).send("Internal Server Error" + err);
     }
 
     // Set the appropriate headers for CSV response
