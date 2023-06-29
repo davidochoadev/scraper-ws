@@ -225,7 +225,7 @@ export default class Search{
         }
         browser.close()
         const newduplicates = oldAuctionData.concat(currentRunduplicates.filter((data) => !oldAuctionData.includes(data)))
-        await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newduplicates)).then(console.log("correctly compiled temp.json"))
+        await fsPromises.writeFile('Temp/temp.json', JSON.stringify(newduplicates)).then(console.log("✅ Correctly compiled temp.json"))
         .catch((err) => {
             console.log(err)
             return 0
