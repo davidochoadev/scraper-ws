@@ -316,9 +316,21 @@ export default class Search{
       }
 
       async deleteExpiredElements() {
-        console.log(chalk.yellow("🗑️ Removing expired elements from storage.json..."));
-        const tempFilePath = 'Temp/storage.json';
-        const oldAuctionData = await this.getDuplicates();
+        let storageFileName;
+        switch (this.config.location) {
+          case "Liguria":
+            storageFileName = "liguria_storage.json"
+            break;
+          case "Piemonte":
+            storageFileName = "piemonte_storage.json";
+            break;
+          case "Lombardia":
+            storageFileName = "lombardia_storage.json";
+            break;
+        }
+        console.log(chalk.yellow(`🗑️ Removing expired elements from ${storageFileName}...`));
+        const tempFilePath = `Temp/${storageFileName}`;
+        const oldAuctionData = await this.getDuplicates(storageFileName);
         const currentDate = new Date();
         
         // Filter out expired elements
@@ -330,7 +342,7 @@ export default class Search{
         try {
           // Write updated data back to storage.json
           await fsPromises.writeFile(tempFilePath, JSON.stringify(updatedData, null, 2));
-          console.log(chalk.green("✅ Expired elements have been removed from storage.json."));
+          console.log(chalk.green(`✅ Expired elements have been removed from ${storageFileName}.`));
         } catch (err) {
           console.error(`Error writing to ${tempFilePath}:`, err);
         }
