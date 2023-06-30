@@ -158,36 +158,47 @@ export default class Search{
         return 0
     }
     
-    async getDuplicates() {
+    async getDuplicates(storageFileName) {
         try {
-          console.log(chalk("Trying to read the storage.json file"))
-          const response = await fsPromises.readFile('Temp/storage.json', { encoding: "utf-8" });
+          console.log(chalk(`Trying to read the ${storageFileName} file`))
+          const response = await fsPromises.readFile(`Temp/${storageFileName}`, { encoding: "utf-8" });
           const oldAuctionData = JSON.parse(response);
           console.log('Current file length: ' + oldAuctionData.length);
           return oldAuctionData;
         } catch (error) {
-          console.log(chalk.redBright('⚙️  Missing file! Creating a new storage.json...'));
+          console.log(chalk.redBright(`⚙️  Missing file! Creating a new ${storageFileName}...`));
           return [];
         }
       }
     
-      async getDatasFromNewResults() {
+      async getDatasFromNewResults(newFileName) {
         try {
-            console.log(chalk.yellow("Trying to read the new_results.json file"));
-            const response = await fsPromises.readFile('Temp/new_results.json', { encoding: "utf-8" });
+            console.log(chalk.yellow(`Trying to read the ${newFileName} file`));
+            const response = await fsPromises.readFile(`Temp/${newFileName}`, { encoding: "utf-8" });
             const newAuctionData = JSON.parse(response);
             console.log('Current file length: ' + newAuctionData.length);
             return newAuctionData;
           } catch (error) {
-            console.log(chalk.redBright('⚙️  Missing file! Creating a new_results.json...'));
+            console.log(chalk.redBright(`⚙️  Missing file! Creating a ${newFileName}...`));
             return [];
           }
       }
       
 
-    async doClusterDataCollection(file_name){
+    async doClusterDataCollection(file_name, location){
+        let newFileName;
+        switch (location) {
+          case "liguria":
+            newFileName = "new_liguria_results.json";
+            break;
+          case "piemonte":
+            newFileName = "new_piemonte_results.json";
+            break;
+          case "lombardia":
+            newFileName = "new_lombardia_results.json";
+            break;
+        }
         console.log(chalk.yellowBright("🏁 Starting Cluster Data Collection..."));
-        const newFileName = `new_results.json`;
         const cluster = await Cluster.launch({
             concurrency: Cluster.CONCURRENCY_PAGE,
             maxConcurrency: this.threads_num,
@@ -200,7 +211,7 @@ export default class Search{
         await cluster.task(async ({page, data: data, worker}) =>{
             await this.grabDataFromdata(page, data, worker.id)
         })
-        const duplicates = await this.getDatasFromNewResults()
+        const duplicates = await this.getDatasFromNewResults(newFileName);
         var checkedduplicates = 0
         var unCheckedduplicates = 0
         duplicates.every(async (data, i) =>{
@@ -236,9 +247,26 @@ export default class Search{
     }
 
     async doSearch() {
-        const newFileName = `new_results.json`;
+        let newFileName;
+        let storageFileName;
+        switch (this.config.location) {
+          case "Liguria":
+            newFileName = "new_liguria_results.json";
+            storageFileName = "liguria_storage.json"
+            break;
+          case "Piemonte":
+            newFileName = "new_piemonte_results.json";
+            storageFileName = "piemonte_storage.json";
+            break;
+          case "Lombardia":
+            newFileName = "new_lombardia_results.json";
+            storageFileName = "lombardia_storage.json";
+            break;
+        }
+
+        console.log(chalk.bgYellow("Request to search auctions on ", this.config.location));
         console.log(chalk.yellow("🔍 Starting Search..."));
-        var oldAuctionData = await this.getDuplicates();
+        var oldAuctionData = await this.getDuplicates(storageFileName);
         var url = this.fabricateQuery(this.config.location, this.config.items_per_page);
         const browser = await puppeteer.launch({ headless: !this.debugMode });
         this.mainPage = await browser.newPage();
@@ -266,10 +294,10 @@ export default class Search{
         if(currentRunDuplicates.length > 0) {
             try {
             await fsPromises.unlink(`Temp/${newFileName}`);
-            await fsPromises.writeFile('Temp/storage.json', JSON.stringify(newDuplicates));
+            await fsPromises.writeFile(`Temp/${storageFileName}`, JSON.stringify(newDuplicates));
             await fsPromises.writeFile(`Temp/${newFileName}`, JSON.stringify(currentRunDuplicates));
             console.log(chalk.green("✅ Correctly created ", newFileName));
-            console.log(chalk.green("✅ Correctly compiled storage.json"));
+            console.log(chalk.green("✅ Correctly compiled ", storageFileName));
             } catch (err) {
             console.log(err);
             return 0;

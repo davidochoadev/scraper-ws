@@ -37,6 +37,45 @@ app.get("/export/export_lombardia.csv", (req, res) => {
   });
 });
 
+app.get("/export/export_liguria.csv", (req, res) => {
+  const filePath = path.join(process.cwd(), "Data", "export_liguria.csv");
+
+  // Read the file contents
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      console.error("Error reading file:", err);
+      return res.status(500).send("Internal Server Error" + err);
+    }
+
+    // Set the appropriate headers for CSV response
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=export_liguria.csv");
+
+    // Send the file contents as the response
+    res.send(data);
+  });
+});
+
+
+app.get("/export/export_piemonte.csv", (req, res) => {
+  const filePath = path.join(process.cwd(), "Data", "export_piemonte.csv");
+
+  // Read the file contents
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      console.error("Error reading file:", err);
+      return res.status(500).send("Internal Server Error" + err);
+    }
+
+    // Set the appropriate headers for CSV response
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", "attachment; filename=export_piemonte.csv");
+
+    // Send the file contents as the response
+    res.send(data);
+  });
+});
+
 app.get("/search", performSearch);
 app.get("/data", performData);
 app.get("/remove", removeData);
