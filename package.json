@@ -1,5 +1,5 @@
 {
-  "name": "paginegialle_webscraper",
+  "name": "asta-click_webscraper",
   "version": "1.0.0",
   "description": "",
   "exports": "./app.js",

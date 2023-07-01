@@ -56,7 +56,6 @@ app.get("/export/export_liguria.csv", (req, res) => {
   });
 });
 
-
 app.get("/export/export_piemonte.csv", (req, res) => {
   const filePath = path.join(process.cwd(), "Data", "export_piemonte.csv");
 
