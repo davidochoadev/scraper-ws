@@ -5,7 +5,6 @@ import { performSearch } from "./controllers/searchController.js";
 import { performData } from "./controllers/dataController.js";
 import { removeData } from "./controllers/removeController.js";
 import fs from "fs";
-import { fileURLToPath } from "url";
 import path from "path";
 
 
