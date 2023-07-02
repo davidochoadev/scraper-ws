@@ -291,9 +291,8 @@ export default class Search{
         }
         await browser.close();
         const newDuplicates = oldAuctionData.concat(currentRunDuplicates.filter((data) => !oldAuctionData.includes(data)));
-        if(currentRunDuplicates.length > 0) {
             try {
-            await fsPromises.unlink(`Temp/${newFileName}`);
+            await fsPromises.writeFile(`Temp/${newFileName}`, '[]');
             await fsPromises.writeFile(`Temp/${storageFileName}`, JSON.stringify(newDuplicates));
             await fsPromises.writeFile(`Temp/${newFileName}`, JSON.stringify(currentRunDuplicates));
             console.log(chalk.green("✅ Correctly created ", newFileName));
@@ -302,17 +301,6 @@ export default class Search{
             console.log(err);
             return 0;
             }
-        } else {
-            // If the lenght of the currentRunDuplicates is equal to 0 
-            try {
-            // We delete the previous newFileName to create a new empty one.
-              await fsPromises.writeFile(`Temp/${newFileName}`, '[]');
-              console.log(chalk.green("✅ Correctly created empty", newFileName));
-            } catch (err) {
-              console.log(err);
-              return 0;
-            }
-          }
       }
 
       async deleteExpiredElements() {
