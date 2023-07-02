@@ -16,19 +16,21 @@ export default class Search{
 
 
     async convertToCSV(data, toFileName){
+        console.log("Try to ConvertToCSV!")
         // Check if the new_[storage]_results.json is empty
         if(data.length !== 0) {
             const csvFields = Object.keys(data[0])
             const parser = new JSON2CSVParser({fields: csvFields, delimiter: ";"})
             var csvData = parser.parse(data)
-            await fsPromises.writeFile(`./Data/${toFileName}.csv`, csvData, (err) =>{
-                if(err) {
-                    console.log("Can't Compile CSV succesfully",err)
-                    return 0
-                }
-                console.log(("✅ CSV File was created successfully"))
-                return {csvRes: "✅ CSV File was created successfully"}
-            })
+            try {
+                await fsPromises.writeFile(`./Data/${toFileName}.csv`, csvData);
+                console.log("✅ CSV File was created successfully");
+                return { csvRes: "✅ CSV File was created successfully" };
+              } catch (err) {
+                console.log("Can't compile CSV successfully", err);
+                return 0;
+              }
+          
         } else {
             //If is empty it create an empty csv to export the file
             const csvFields = [];
@@ -244,24 +246,30 @@ export default class Search{
                     await cluster.execute(data)
                 }
                 catch(err){
-                    console.log(err)
-                    // console.log("Failed to evaluate data number: " + i)
+                    console.log("Failed to evaluate data number :  " + i,err)
                 }
             }
         })
         await cluster.idle()
         await cluster.close()
-        const toCSV = await this.convertToCSV(this.search_data, file_name)
-        console.log(chalk.greenBright(`✅ ${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv`));
         try {
-            // We delete the previous newFileName to create a new empty one.
+            const toCSV = await this.convertToCSV(this.search_data, file_name);
+            console.log(chalk.greenBright(`✅ ${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv`), toCSV);
+        
+            try {
+              // We delete the previous newFileName to create a new empty one.
               await fsPromises.writeFile(`Temp/${newFileName}`, '[]');
               console.log(chalk.green("✅ Correctly reset of", newFileName));
             } catch (err) {
               console.log(err);
               return 0;
             }
-        return {toCSV};
+        
+            return { toCSV, resOfCSV: `✅ ${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv` };
+          } catch (error) {
+            console.log(error);
+            return 0;
+          }
     }
 
     async doSearch() {
@@ -310,14 +318,15 @@ export default class Search{
         await browser.close();
         const newDuplicates = oldAuctionData.concat(currentRunDuplicates.filter((data) => !oldAuctionData.includes(data)));
             try {
-            await fsPromises.writeFile(`Temp/${newFileName}`, '[]');
-            await fsPromises.writeFile(`Temp/${storageFileName}`, JSON.stringify(newDuplicates));
-            await fsPromises.writeFile(`Temp/${newFileName}`, JSON.stringify(currentRunDuplicates));
-            console.log(chalk.green("✅ Correctly created ", newFileName));
-            console.log(chalk.green("✅ Correctly compiled ", storageFileName));
+                await fsPromises.writeFile(`Temp/${newFileName}`, '[]');
+                await fsPromises.writeFile(`Temp/${storageFileName}`, JSON.stringify(newDuplicates));
+                await fsPromises.writeFile(`Temp/${newFileName}`, JSON.stringify(currentRunDuplicates));
+                console.log(chalk.green("✅ Correctly created ", newFileName));
+                console.log(chalk.green("✅ Correctly compiled ", storageFileName));
+                return {newFileLenght : currentRunDuplicates.length, storageLenght: newDuplicates.length}
             } catch (err) {
-            console.log(err);
-            return 0;
+                console.log(err);
+                return 0;
             }
       }
 

@@ -31,8 +31,9 @@ export const performData = async (req, res) => {
             try {
               const response = await searchLombardia.doClusterDataCollection("export_lombardia", req.query.location);
               const result = response.toCSV.csvRes
+              const quantity = response.toCSV.resOfCSV
               // Handle success and send the response
-              res.status(200).json({ message: "Lombardia Data performed successfully", result });
+              res.status(200).json({ message: "Lombardia Data performed successfully", response});
             } catch (err) {
               console.log("Timeout error occurred, cannot retrieve Lombardia auctions.", err);
               // Handle error and send the response

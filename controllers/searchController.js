@@ -10,9 +10,9 @@ export const performSearch = async (req, res) => {
       // Handle search result for Liguria
       if (req.query.key === process.env.KEY) {
         try {
-          await searchLiguria.doSearch()
+          const liguria = await searchLiguria.doSearch()
           // Handle success and send the response
-          res.status(200).json({ message: "Search performed successfully for Liguria" });
+          res.status(200).json({ message: "Search performed successfully for Liguria" , liguria});
         } catch (err) {
           console.log("Timeout error occurred for Liguria!", err);
           // Handle error and send the response
@@ -27,9 +27,9 @@ export const performSearch = async (req, res) => {
         // Handle search result for Liguria
         if (req.query.key === process.env.KEY) {
           try {
-            await searchPiemonte.doSearch()
+            const piemonte = await searchPiemonte.doSearch()
             // Handle success and send the response
-            res.status(200).json({ message: "Search performed successfully for Piemonte" });
+            res.status(200).json({ message: "Search performed successfully for Piemonte", piemonte } );
           } catch (err) {
             console.log("Timeout error occurred for Piemonte!", err);
             // Handle error and send the response
@@ -44,9 +44,9 @@ export const performSearch = async (req, res) => {
         // Handle search result for Lombardia
         if (req.query.key === process.env.KEY) {
           try {
-            await searchLombardia.doSearch()
+            const lombardia = await searchLombardia.doSearch()
             // Handle success and send the response
-            res.status(200).json({ message: "Search performed successfully for Lombardia" });
+            res.status(200).json({ message: "Search performed successfully for Lombardia", lombardia });
           } catch (err) {
             console.log("Timeout error occurred for Lombardia!", err);
             // Handle error and send the response
