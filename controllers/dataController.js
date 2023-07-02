@@ -29,9 +29,10 @@ export const performData = async (req, res) => {
         const searchLombardia = new Search(search_lombardia, 0, 10, 12);
         if (req.query.key === process.env.KEY) {
             try {
-              await searchLombardia.doClusterDataCollection("export_lombardia", req.query.location);
+              const response = await searchLombardia.doClusterDataCollection("export_lombardia", req.query.location);
+              const result = response.toCSV.csvRes
               // Handle success and send the response
-              res.status(200).json({ message: "Lombardia Data performed successfully" });
+              res.status(200).json({ message: "Lombardia Data performed successfully", result });
             } catch (err) {
               console.log("Timeout error occurred, cannot retrieve Lombardia auctions.", err);
               // Handle error and send the response
@@ -43,9 +44,10 @@ export const performData = async (req, res) => {
         const searchLiguria = new Search(search_liguria, 0, 10, 12);
         if (req.query.key === process.env.KEY) {
             try {
-              await searchLiguria.doClusterDataCollection("export_liguria", req.query.location);
+              const response = await searchLiguria.doClusterDataCollection("export_liguria", req.query.location);
+              const result = response.toCSV.csvRes
               // Handle success and send the response
-              res.status(200).json({ message: "Liguria Data performed successfully" });
+              res.status(200).json({ message: "Liguria Data performed successfully", result });
             } catch (err) {
               console.log("Timeout error occurred, cannot retrieve Liguria auctions.", err);
               // Handle error and send the response
@@ -57,9 +59,10 @@ export const performData = async (req, res) => {
         const searchPiemonte = new Search(search_piemonte, 0, 10, 12);
         if (req.query.key === process.env.KEY) {
             try {
-              await searchPiemonte.doClusterDataCollection("export_piemonte", req.query.location);
+              const response = await searchPiemonte.doClusterDataCollection("export_piemonte", req.query.location);
+              const result = response.toCSV.csvRes
               // Handle success and send the response
-              res.status(200).json({ message: "Piemonte Data performed successfully" });
+              res.status(200).json({ message: "Piemonte Data performed successfully", result });
             } catch (err) {
               console.log("Timeout error occurred, cannot retrieve Piemonte auctions.", err);
               // Handle error and send the response

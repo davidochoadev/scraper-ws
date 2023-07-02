@@ -16,18 +16,36 @@ export default class Search{
 
 
     async convertToCSV(data, toFileName){
-        const csvFields = Object.keys(data[0])
-        const parser = new JSON2CSVParser({fields: csvFields, delimiter: ";"})
-        var csvData = parser.parse(data)
-        await fsPromises.writeFile(`./Data/${toFileName}.csv`, csvData, (err) =>{
-            if(err) {
-                console.log(err)
-                return 0
+        // Check if the new_[storage]_results.json is empty
+        if(data.length !== 0) {
+            const csvFields = Object.keys(data[0])
+            const parser = new JSON2CSVParser({fields: csvFields, delimiter: ";"})
+            var csvData = parser.parse(data)
+            await fsPromises.writeFile(`./Data/${toFileName}.csv`, csvData, (err) =>{
+                if(err) {
+                    console.log("Can't Compile CSV succesfully",err)
+                    return 0
+                }
+                console.log(("✅ CSV File was created successfully"))
+                return {csvRes: "✅ CSV File was created successfully"}
+            })
+        } else {
+            //If is empty it create an empty csv to export the file
+            const csvFields = [];
+            const csvData = '';
+            const csvContent = csvFields.join(';') + '\n' + csvData;
+            
+            try {
+            await fsPromises.writeFile(`./Data/${toFileName}.csv`, csvContent);
+            console.log("Created empty CSV File!");
+            return {csvRes: "Created empty CSV File! :("};
+            } catch (err) {
+            console.log(err);
+            return 0;
             }
-            console.log(("✅ CSV File was created successfully"))
-            return 1
-        })
+        }
     }
+
     //auction_threshold, auction_end_threshold
     fabricateQuery(){
         return `https://pvp.giustizia.it/pvp/it/risultati_ricerca.page?tipo_bene=immobili&categoria=&geo=geografica&nazione=ITA&regione=${region_index[this.config.location]}&localita=&indirizzo=&prezzo_da=&prezzo_a=&tribunale=&procedura=&anno=&idInserzione=&ricerca_libera=&disponibilita=&ordinamento=data_pub_decre&ordine_localita=a_z&view=tab&elementiPerPagina=${this.config.items_per_page}&frame4_item=1`
@@ -233,7 +251,7 @@ export default class Search{
         })
         await cluster.idle()
         await cluster.close()
-        await this.convertToCSV(this.search_data, file_name)
+        const toCSV = await this.convertToCSV(this.search_data, file_name)
         console.log(chalk.greenBright(`✅ ${checkedduplicates} have been successfully fetched from a total of ${duplicates.length}. All data has been saved in ${file_name}.csv`));
         try {
             // We delete the previous newFileName to create a new empty one.
@@ -243,7 +261,7 @@ export default class Search{
               console.log(err);
               return 0;
             }
-        return 0
+        return {toCSV};
     }
 
     async doSearch() {
