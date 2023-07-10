@@ -4,6 +4,55 @@ import { Cluster } from 'puppeteer-cluster'
 import JSON2CSVParser from 'json2csv/lib/JSON2CSVParser.js'
 import { region_index } from '../dataController.js'
 import chalk from 'chalk';
+
+async function searchComuneFunc(address,location) {
+  console.log("location on fun", location);
+  let comuniList;
+  switch (location) {
+    case "Liguria":
+      comuniList = "comuni_liguria.json";
+      break;
+    case "Piemonte":
+      comuniList = "comuni_piemonte.json";
+      break;
+    case "Lombardia":
+      comuniList = "comuni_lombardia.json";
+      break;
+    case "Valle d'Aosta/Vallée d'Aoste":
+      comuniList = "comuni_vda.json";
+      break;
+  }
+    // Carica il file JSON contenente i dati dei comuni
+    const response = await fsPromises.readFile(`./${comuniList}`, { encoding: "utf-8" });
+    const comuniData = JSON.parse(response);
+
+    // Estrai il nome del comune dall'indirizzo fornito
+    const comuneRegex = /\d{5}\s(.+?)(?=\s\([^)]+\)$)/;
+
+    const match = address.match(comuneRegex);
+    if (match) {
+        let comune = match[1];
+        // Cerca il comune nel file JSON
+        const result = comuniData.find((item) => item.comune === comune);
+        if (result) {
+        // Il comune è stato trovato nel file JSON
+
+        let comune = result.comune;
+        let provincia = result.den_prov;
+        let sigla = result.sigla;
+        let regione = location;
+        return {comune, provincia, sigla,regione}
+        // Puoi eseguire le operazioni desiderate con i dati del comune trovato
+        } else {
+        // Il comune non è stato trovato nel file JSON
+        return []
+        }
+    } else {
+        // Indirizzo non valido
+       return []
+    }
+}
+
 export default class Search{
 
     constructor(config = {location: 1, items_per_page: 10}, debugMode=0, maxCycles=3, threads_num=10){
@@ -30,7 +79,7 @@ export default class Search{
                 console.log("Can't compile CSV successfully", err);
                 return 0;
               }
-          
+                                  
         } else {
             //If is empty it create an empty csv to export the file
             const csvFields = [];
@@ -90,8 +139,13 @@ export default class Search{
         await cluster.waitForSelector("#annunci > div > div:nth-child(2) > div")
         const auctionData = {}
         auctionData["Numero inserzione"] = (await cluster.evaluate(el => el.textContent, await cluster.$("#header-interna > div > h1:nth-child(2)"))).split(".")[1].trim()
-        auctionData["Posizione lotto"] = data.auctionCardLocation
-        auctionData["Categoria"] = data.auctionCardCategory
+        auctionData["Posizione lotto"] = data.auctionCardLocation;
+        const getDataComuni = await searchComuneFunc(data.auctionCardLocation, this.config.location);
+        auctionData["Comune"] = getDataComuni.comune;
+        auctionData["Provincia"] = getDataComuni.provincia;
+        auctionData["Sigla"] = getDataComuni.sigla;
+        auctionData["Regione"] = getDataComuni.regione;
+        auctionData["Categoria"] = data.auctionCardCategory;
         await cluster.waitForSelector('#annunci > div > div:nth-child(2) > div > div.row')
         const auction_sell_detailsRows = await cluster.$$('#annunci > div > div:nth-child(2) > div > div.row')
         for(const auction_sell_detailsRowHandle of auction_sell_detailsRows){
@@ -217,6 +271,9 @@ export default class Search{
           case "lombardia":
             newFileName = "new_lombardia_results.json";
             break;
+          case "vda":
+            newFileName = "new_vda_results.json";
+            break;
         }
         console.log(chalk.yellowBright("🏁 Starting Cluster Data Collection..."));
         const cluster = await Cluster.launch({
@@ -275,6 +332,7 @@ export default class Search{
     async doSearch() {
         let newFileName;
         let storageFileName;
+        console.log("Config location", this.config.location);
         switch (this.config.location) {
           case "Liguria":
             newFileName = "new_liguria_results.json";
@@ -287,6 +345,10 @@ export default class Search{
           case "Lombardia":
             newFileName = "new_lombardia_results.json";
             storageFileName = "lombardia_storage.json";
+            break;
+          case "Valle d'Aosta/Vallée d'Aoste":
+            newFileName = "new_vda_results.json";
+            storageFileName = "vda_storage.json";
             break;
         }
 
@@ -341,6 +403,9 @@ export default class Search{
             break;
           case "Lombardia":
             storageFileName = "lombardia_storage.json";
+            break;
+          case "Valle d'Aosta/Vallée d'Aoste":
+            storageFileName = "vda_storage.json";
             break;
         }
         console.log(chalk.yellow(`🗑️ Removing expired elements from ${storageFileName}...`));

@@ -1,5 +1,5 @@
 import Search from "./classes/search.js";
-import { search_liguria, search_lombardia, search_piemonte } from "./dataController.js";
+import { search_liguria, search_lombardia, search_piemonte, search_vda } from "./dataController.js";
 import "dotenv/config";
 
 export const removeData = async (req, res) => {
@@ -44,6 +44,22 @@ export const removeData = async (req, res) => {
           await searchPiemonte.deleteExpiredElements()
           // Handle success and send the response
           res.status(200).json({ message: "🗑 Deleted Expired Elements from piemonte storage" });
+        } catch (err) {
+          console.log("Timeout error occurred", err);
+          // Handle error and send the response
+          res.status(500).json({ error: "Timeout error occurred" });
+        }
+      } else {
+        res.status(500).json({ error: "Wrong Key to Remove Data!" });
+      }
+    break;
+    case "vda":
+      const searchVda = new Search(search_vda, 0, 10, 12);
+      if (req.query.key === process.env.KEY) {
+        try {
+          await searchVda.deleteExpiredElements()
+          // Handle success and send the response
+          res.status(200).json({ message: "🗑 Deleted Expired Elements from Valle d'Aosta storage" });
         } catch (err) {
           console.log("Timeout error occurred", err);
           // Handle error and send the response
