@@ -222,8 +222,18 @@ export default class Search{
             }
         }
         auctionData["Immagini"] = auction_imgs
-        const date = auctionData["Termine presentazione offerta"].replaceAll("/", "-").split(" ")[0]
-        const auctionDate = new Date(date.split("-").reverse().join(","))
+        const date = auctionData["Termine presentazione offerta"].replaceAll("/", "-").split(" ")[0] //2023-09-18T22:00:00.000Z
+        const auctionDate = new Date(date.split("-").reverse().join(",")) // 19-09-2023
+        // Creazione della data di scadenza a partire da auctionDate
+        const dataexp = new Date(auctionDate); // 2023-09-18T22:00:00.000Z
+        const exp  = new Date(dataexp.getTime() - 7 * 24 * 60 * 60 * 1000); // 2023-10-17T22:00:00.000Z
+        auctionData["Scadenza WP"] = exp.toLocaleString('it-IT', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
         const minDate = new Date(new Date().getDate() + 40 * 24 * 60 * 60 * 1000)
         if(auctionDate.getDate() > minDate.getDate()){
             console.log(chalk.green("✅ The termination date of the auction is within the time limit"))
