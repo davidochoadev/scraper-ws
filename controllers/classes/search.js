@@ -151,7 +151,16 @@ export default class Search{
         for(const auction_sell_detailsRowHandle of auction_sell_detailsRows){
             if((await cluster.evaluate(el => el.children[0]?.className, auction_sell_detailsRowHandle) === 'col-xs-12 col-md-8 col-lg-6 margin-top-20')) continue
             const childKey = await cluster.evaluate(el => el.children[0]?.textContent, auction_sell_detailsRowHandle)
-            const childValue = await cluster.evaluate(el => el.children[1]?.textContent, auction_sell_detailsRowHandle)
+            var childValue = await cluster.evaluate(el => el.children[1]?.textContent, auction_sell_detailsRowHandle);
+            const euroRegex =  /€\s?([\d.,]+)/g;
+              const matches = childValue.match(euroRegex);
+              if (matches) {
+                console.log("matches", matches);
+
+                  const parsedValue = matches[0].replace(/[^\d.,]/g, '').replaceAll('.', '').replace(',','.');
+                  childValue = parsedValue;
+              }
+            console.log("childValue:", childValue)
             auctionData[childKey?.replaceAll("\t", "").replaceAll("\n", "").trim()] = childValue?.replaceAll("\t", "").replaceAll("\n", "").trim()
         }
         const auction_sell_procedureRows = await cluster.$$('body > div:nth-child(10) > div > div.col-md-9.anagrafica-tribunale > div.row')
@@ -159,6 +168,7 @@ export default class Search{
             var childValue = ""
             if(await cluster.evaluate(el => el.children.length, auction_sell_procedureRowHandle) === 3){
                 const childKey = await cluster.evaluate(el => el.children[1]?.textContent, auction_sell_procedureRowHandle)
+                
                 if(await cluster.evaluate(el => el.children[2]?.children.length, auction_sell_procedureRowHandle) > 0){
                     childValue = await cluster.evaluate(el => el.children[2]?.children[0].textContent, auction_sell_procedureRowHandle)
                 }
