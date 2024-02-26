@@ -206,7 +206,7 @@ export default class Search{
         const auctionItems = []
         for(const auctionItemsRowsHandle of auctionItemsRows){
             const item = {}
-            item["Indirizzo"] = (await cluster.evaluate(el => el?.children[0]?.children[1]?.children[0]?.textContent, auctionItemsRowsHandle)).replaceAll("\n", "").replaceAll("\t", "").trim()
+            item["Indirizzo"] = (await cluster.evaluate(el => el?.children[0]?.children[1]?.children[0]?.textContent, auctionItemsRowsHandle)).replaceAll("\n", "").replaceAll("\t", "").trim().replaceAll("-", ",");
             item["Descrizione"] = (await cluster.evaluate(el => el?.children[0]?.children[1]?.children[1]?.textContent, auctionItemsRowsHandle)).replaceAll("\n", "").replaceAll("\t", "").trim()
             const detailsRows = await cluster.$$('#beni-lotto > div.container.bg-white > div > div:nth-child(2) > div.anagrafica-tribunale > div.row')
             const details = {}
